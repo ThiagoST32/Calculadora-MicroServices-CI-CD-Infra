@@ -3,7 +3,7 @@ services:
     container_name: mysql-calc
     image: ${ECR_REGISTRY_REPO}/${IMAGE_NAME_DB}:1.0
     volumes:
-      - ./Servers/MySQL/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./MySQL/init.sql:/docker-entrypoint-initdb.d/init.sql
       - db_data:/var/lib/mysql
     depends_on:
       - vault-calc
@@ -40,9 +40,7 @@ services:
       - IPC_LOCK
     restart: unless-stopped
     healthcheck:
-      test: [ "CMD", "vault", "kv", "get",
-              "-address=http://127.0.0.1:8200",
-              "secret/calcDbSecrets" ]
+      test: ["CMD", "vault", "status", "-address=http://127.0.0.1:8200"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -52,7 +50,7 @@ services:
 
   calc-application-db:
     container_name: calc-application-db
-    image: ${ECR_REGISTRY_REPO}/${IMAGE_NAME_DB}
+    image: ${ECR_REGISTRY_REPO}/${IMAGE_NAME_APP}:1.0
     environment:
       SPRING_CLOUD_VAULT_TOKEN: ${VAULT_TOKEN}
       SPRING_CLOUD_VAULT_URI: ${VAULT_APPLICATION_ADDR}
@@ -62,14 +60,16 @@ services:
       mysql-calc:
         condition: service_healthy
       vault-calc:
-        condition: service_started
+        condition: service_healthy
     ports:
       - "8081:8081"
     restart: on-failure
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://mysql-calc:8081/actuator/health"]
+      test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8081/actuator/health"]
       timeout: 10s
+      interval: 5s
       retries: 5
+      start_period: 5s
 
 volumes:
   db_data:
