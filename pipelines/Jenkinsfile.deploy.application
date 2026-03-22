@@ -27,8 +27,8 @@ pipeline {
                     string(credentialsId: 'IMAGE-NAME-APP',                     variable: 'IMAGE_NAME_APP')
                 ]) {
                     sh """
-                        # Gera o .env em tempo de execução — nunca commitado
-                        cat > compose/Application/.env <<EOF
+                        # Gera o .env em tempo de execução — nunca commitado para que a aplicação possa subir corretamente
+                        cat > compose/Servers/Application/.env <<EOF
                         ECR_REGISTRY_REPO=${ECR_REGISTRY_REPO}
                         IMAGE_NAME_DB=${IMAGE_NAME_DB}
                         IMAGE_NAME_APP=${IMAGE_NAME_APP}
@@ -47,7 +47,7 @@ pipeline {
         stage('Deploy application') {
             steps {
                 sh """
-                    docker-compose -f compose/Application/docker-compose.yml up -d
+                    docker-compose -f compose/Servers/Application/docker-compose.yml up -d
                 """
             }
         }
@@ -55,7 +55,7 @@ pipeline {
 
     post {
         always {
-            sh 'rm -f compose/Application/.env'
+            sh 'rm -f compose/Servers/Application/.env'
         }
     }
 }

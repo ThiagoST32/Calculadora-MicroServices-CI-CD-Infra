@@ -1,0 +1,53 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Fase 1 — Build das imagens') {
+            parallel {
+                stage('Pipe 01 — App') {
+                    steps {
+                        build job: 'Calculadora Micro Services ECR Java Application', wait: true
+                    }
+                }
+                stage('Pipe 02 — Banco') {
+                    steps {
+                        build job: 'Calculadora Micro services MySQL ECR', wait: true
+                    }
+                }
+            }
+        }
+
+        stage('Fase 2 — Subir Aplicação') {
+            parallel {
+                stage('Pipe 03 — Aplicação') {
+                    steps {
+                        build job: 'Calculadora Micro Services Up Aplicação', wait: true
+                    }
+                }
+                stage('Pipe 04 — Monitoramento') {
+                    steps {
+                        build job: 'Calculadora Micro Services Up Monitoramento', wait: true
+                    }
+                }
+                stage('Pipe 05 — Teste Ambiente') {
+                    steps {
+                        build job: 'Calculadora Micro Services Testing application', wait: true
+                    }
+                }
+            }
+        }
+
+        stage('Tear down') {
+            steps {
+                sh 'docker-compose -f compose/Servers/docker-compose.yml down'
+            }
+        }
+    }
+
+    post {
+        failure {
+            echo 'Pipeline falhou — executando tear down de segurança'
+            sh 'docker-compose -f compose/Servers/docker-compose.yml down || true'
+        }
+    }
+}

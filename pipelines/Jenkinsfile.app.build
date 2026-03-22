@@ -4,7 +4,7 @@ pipeline {
     environment {
         AWS_REGION         = credentials('AWS-REGION-DEFAULT')
         ECR_REGISTRY       = credentials('ECR-REGISTRY-REPO-CALCULADORA')
-        IMAGE_NAME_DB      = credentials('IMAGE-NAME-APP')
+        IMAGE_NAME_APP     = credentials('IMAGE-NAME-APP')
     }
 
     triggers {
@@ -28,28 +28,18 @@ pipeline {
         stage('Docker Build Java Application') {
             steps {
                 script {
-                	def imageTag = "${ECR_REGISTRY}/${IMAGE_NAME}:1.0"
+                	def imageTag = "${ECR_REGISTRY}/${IMAGE_NAME_APP}:1.0"
                 	sh "docker build -f Servers/JavaApp/Dockerfile -t ${imageTag} ."
                 	env.IMAGE_TAG = imageTag
                 }
             }
         }
-        
-        stage('Docker Build MySQL') {
-            steps {
-            	script { 
-            	  def imageTag = "${ECR_REGISTRY}/${IMAGE_NAME_DB}:1.0"
-            	  sh "docker build -f Servers/MySQL/Dockerfile -t ${imageTag} ."
-            	  env.IMAGE_TAG_DB = imageTag
-            	}
-            }
-        }
-
+    
         stage('Push para ECR') {
             steps {
                 withCredentials([[
                     $class:            'AmazonWebServicesCredentialsBinding',
-                    credentialsId:     'YOUR-CREDENTIALS-JENKINS-AWS',
+                    credentialsId:     'JenkinsECR',
                     accessKeyVariable: 'AWS_ACCESS_KEY_ID',
                     secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
                 ]]) {
