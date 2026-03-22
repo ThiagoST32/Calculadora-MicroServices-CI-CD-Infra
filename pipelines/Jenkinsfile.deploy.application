@@ -57,5 +57,8 @@ pipeline {
         always {
             sh 'rm -f compose/Servers/Application/.env'
         }
+        failure {
+            sh 'docker-compose -f compose/Servers/Application/docker-compose.yml down -v || false'
+        }
     }
 }

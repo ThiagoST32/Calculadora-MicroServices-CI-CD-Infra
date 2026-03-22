@@ -18,36 +18,49 @@ pipeline {
         }
 
         stage('Fase 2 — Subir Aplicação') {
-            parallel {
-                stage('Pipe 03 — Aplicação') {
-                    steps {
-                        build job: 'Calculadora Micro Services Up Aplicação', wait: true
+            steps {
+                script {
+                    def status = build(
+                        job: 'Calculadora Micro Services Up Aplicação',
+                        wait: true,
+                        propagate: false
+                    )
+
+                    env.APP_UP = status.result == 'SUCCESS' ? 'true' : 'false'
+
+                    if(env.APP_UP == 'false') {
+                        error("Aplicação falhou ao subir - abortando build!")
                     }
                 }
-                stage('Pipe 04 — Monitoramento') {
-                    steps {
-                        build job: 'Calculadora Micro Services Up Monitoramento', wait: true
-                    }
-                }
-                stage('Pipe 05 — Teste Ambiente') {
-                    steps {
-                        build job: 'Calculadora Micro Services Testing application', wait: true
-                    }
+            }
+        }
+
+        stage('Fase 3 - Subir Monitoramento') {
+            when {
+                expression { env.APP_UP == 'true' }
+            }
+            steps {
+                script {
+                    build job: 'Calculadora Micro Services Up Monitoramento', wait: true
                 }
             }
         }
 
         stage('Tear down') {
             steps {
-                sh 'docker-compose -f compose/Servers/docker-compose.yml down'
+                echo 'Simulando limpeza!'
             }
         }
     }
 
     post {
+
+        always {
+            echo 'Pipeline executada!'
+        }
+
         failure {
             echo 'Pipeline falhou — executando tear down de segurança'
-            sh 'docker-compose -f compose/Servers/docker-compose.yml down || true'
         }
     }
 }

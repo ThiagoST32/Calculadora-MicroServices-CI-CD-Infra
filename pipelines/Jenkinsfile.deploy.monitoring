@@ -17,7 +17,7 @@ pipeline {
             steps {
                 withCredentials([
                     string(credentialsId: 'GF-INSTANCE-NAME',               variable: 'GF_INSTANCE_NAME'),
-                    string(credentialsId: 'GF_ADMIN',                       variable: 'GF_ADMIN'),
+                    string(credentialsId: 'GF-ADMIN',                       variable: 'GF_ADMIN'),
                     string(credentialsId: 'GF-ADMIN-PASSWORD',              variable: 'GF_ADMIN_PASSWORD'),
                     string(credentialsId: 'MYSQL-USERNAME',                 variable: 'MYSQL_USERNAME'),
                     string(credentialsId: 'MYSQL-USER-PASSWORD',            variable: 'MYSQL_USER_PASSWORD')
@@ -28,7 +28,7 @@ pipeline {
                             GF_INSTANCE_NAME=${GF_INSTANCE_NAME}
                             GF_ADMIN=${GF_ADMIN}
                             GF_ADMIN_PASSWORD=${GF_ADMIN_PASSWORD}
-                            MYSQL_USERNAME=${MYSQL_USERNAME'}
+                            MYSQL_USERNAME=${MYSQL_USERNAME}
                             MYSQL_USER_PASSWORD=${MYSQL_USER_PASSWORD}
                         EOF
                     """
@@ -51,7 +51,7 @@ pipeline {
         }
 
         failure {
-            sh 'docker-compose -f compose/Servers/Monitoring/docker-compose.yml down -v'
+            sh 'docker-compose -f compose/Servers/Monitoring/docker-compose.yml down -v || false'
         }
     }
 }
