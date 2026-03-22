@@ -1,0 +1,57 @@
+pipeline {
+    agent any
+
+    triggers{
+        githubPush()
+    }
+
+    stages{
+        stage('Cloning Repository') {
+            steps {
+                git branch: 'main',
+                    url: 'https://github.com/ThiagoST32/Calculadora-MicroServices-CI-CD-Infra'
+            }
+        }
+
+        stage('Creating .env') {
+            steps {
+                withCredentials([
+                    string(credentialsId: 'GF-INSTANCE-NAME',               variable: 'GF_INSTANCE_NAME'),
+                    string(credentialsId: 'GF_ADMIN',                       variable: 'GF_ADMIN'),
+                    string(credentialsId: 'GF-ADMIN-PASSWORD',              variable: 'GF_ADMIN_PASSWORD'),
+                    string(credentialsId: 'MYSQL-USERNAME',                 variable: 'MYSQL_USERNAME'),
+                    string(credentialsId: 'MYSQL-USER-PASSWORD',            variable: 'MYSQL_USER_PASSWORD')
+                ]) {
+                    sh """
+                        # Gera o .env em tempo de execução — nunca commitado para que a aplicação possa subir corretamente
+                        cat > compose/Servers/Monitoring/.env <<EOF
+                            GF_INSTANCE_NAME=${GF_INSTANCE_NAME}
+                            GF_ADMIN=${GF_ADMIN}
+                            GF_ADMIN_PASSWORD=${GF_ADMIN_PASSWORD}
+                            MYSQL_USERNAME=${MYSQL_USERNAME'}
+                            MYSQL_USER_PASSWORD=${MYSQL_USER_PASSWORD}
+                        EOF
+                    """
+                }
+            }
+        }
+
+        stage('Deploy Monitoring') {
+            steps {
+                sh """
+                    docker-compose -f compose/Servers/Monitoring/docker-compose.yml up -d
+                """
+            }
+        }
+    }
+
+    post {
+        always {
+            sh 'rm -f compose/Servers/Monitoring/.env'
+        }
+
+        failure {
+            sh 'docker-compose -f compose/Servers/Monitoring/docker-compose.yml down -v'
+        }
+    }
+}

@@ -7,6 +7,13 @@ services:
       - prometheus-data:/prometheus
     ports:
       - "9090:9090"
+
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:9090/status || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
     networks:
       - calc-db-network
 
@@ -17,9 +24,12 @@ services:
     image: grafana/grafana-oss:latest
 
     depends_on:
-      - prometheus-service
+      prometheus-service:
+        condition: service_healthy
+
     ports:
       - "3000:3000"
+
     environment:
       GF_DEFAULT_INSTANCE_NAME: ${GF_INSTANCE_NAME}
       GF_SECURITY_ADMIN_USER: ${GF_ADMIN}
@@ -44,12 +54,25 @@ services:
   mysql-exporter:
     container_name: mysql-monitor
     image: prom/mysqld-exporter:latest
+
     command:
       - --mysqld.username=${MYSQL_USERNAME}:${MYSQL_USER_PASSWORD}
       - --mysqld.address=mysql-calc:3306
+
     ports:
       - "9104:9104"
+
     restart: unless-stopped
+
+    depends_on:
+      prometheus-service:
+        condition: service_healthy
+
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:9104/metrics || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
     networks:
       - calc-db-network
@@ -59,13 +82,19 @@ services:
     image: gcr.io/cadvisor/cadvisor:latest
 
     depends_on:
-      - prometheus-service
+      prometheus-service:
+        condition: service_healthy
+
     command:
       - --port=8082
+
     ports:
       - "8082:8082"
+      
     restart: unless-stopped
+
     privileged: true
+
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:ro
@@ -74,7 +103,7 @@ services:
       - /sys/fs/cgroup:/sys/fs/cgroup:ro
 
     healthcheck:
-      test: wget --no-verbose --tries=1 --spider http://localhost:8082 || exit 1
+      test: wget --no-verbose --tries=1 --spider http://localhost:8082/docker/ || exit 1
       interval: 30s
       timeout: 10s
       retries: 3
