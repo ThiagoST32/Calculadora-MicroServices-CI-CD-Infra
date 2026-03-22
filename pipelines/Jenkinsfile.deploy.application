@@ -1,0 +1,61 @@
+pipeline {
+    agent any
+
+    triggers{
+        githubPush()
+    }
+
+    stages{
+        stage('Cloning Repository') {
+            steps {
+                git branch: 'main',
+                    url: 'https://github.com/ThiagoST32/Calculadora-MicroServices-CI-CD-Infra'
+            }
+        }
+
+        stage('Creating .env') {
+            steps {
+                withCredentials([
+                    string(credentialsId: 'ECR-REGISTRY-REPO-CALCULADORA',      variable: 'ECR_REGISTRY_REPO'),
+                    string(credentialsId: 'MYSQL-PASSWORD-ROOT',                variable: 'MYSQL_PASSWORD_ROOT'),
+                    string(credentialsId: 'VAULT-TOKEN',                        variable: 'VAULT_TOKEN'),
+                    string(credentialsId: 'VAULT-LISTENING-ADDR',               variable: 'VAULT_LISTENING_ADDR'),
+                    string(credentialsId: 'VAULT-INTERNAL-ADDR',                variable: 'VAULT_INTERNAL_ADDR'),
+                    string(credentialsId: 'VAULT-APPLICATION-ADDR',             variable: 'VAULT_APPLICATION_ADDR'),
+                    string(credentialsId: 'MYSQL-ROOT-HOST',                    variable: 'MYSQL_ROOT_HOST'),
+                    string(credentialsId: 'IMAGE-NAME-DB',                      variable: 'IMAGE_NAME_DB'),
+                    string(credentialsId: 'IMAGE-NAME-APP',                     variable: 'IMAGE_NAME_APP')
+                ]) {
+                    sh """
+                        # Gera o .env em tempo de execução — nunca commitado
+                        cat > compose/Application/.env <<EOF
+                        ECR_REGISTRY_REPO=${ECR_REGISTRY_REPO}
+                        IMAGE_NAME_DB=${IMAGE_NAME_DB}
+                        IMAGE_NAME_APP=${IMAGE_NAME_APP}
+                        MYSQL_PASSWORD_ROOT=${MYSQL_PASSWORD_ROOT}
+                        MYSQL_ROOT_HOST=${MYSQL_ROOT_HOST}
+                        VAULT_TOKEN=${VAULT_TOKEN}
+                        VAULT_LISTENING_ADDR=${VAULT_LISTENING_ADDR}
+                        VAULT_INTERNAL_ADDR=${VAULT_INTERNAL_ADDR}
+                        VAULT_APPLICATION_ADDR=${VAULT_APPLICATION_ADDR}
+                        EOF
+                    """
+                }
+            }
+        }
+
+        stage('Deploy application') {
+            steps {
+                sh """
+                    docker-compose -f compose/Application/docker-compose.yml up -d
+                """
+            }
+        }
+    }
+
+    post {
+        always {
+            sh 'rm -f compose/Application/.env'
+        }
+    }
+}

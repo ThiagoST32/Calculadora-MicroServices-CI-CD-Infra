@@ -1,0 +1,81 @@
+services:
+  mysql-calc:
+    container_name: mysql-calc
+    image: ${ECR_REGISTRY_REPO}:${IMAGE_NAME_DB}
+    volumes:
+      - ./Servers/MySQL/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - db_data:/var/lib/mysql
+    depends_on:
+      - vault-calc
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD_ROOT}
+      MYSQL_ROOT_HOST: ${MYSQL_ROOT_HOST}
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "http://mysql-calc:8081/actuator/health"]
+      timeout: 10s
+      interval: 5s
+      retries: 5
+      start_period: 10s
+    restart: always
+    networks:
+      - calc-db
+
+  vault-calc:
+    container_name: vault-calc
+    image: hashicorp/vault:1.18.3
+    volumes:
+      - ./vault/scripts/vault.sh:/vault/scripts/vault.sh
+      - vault_data:/vault/file
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: ${VAULT_TOKEN}
+      VAULT_DEV_LISTEN_ADDRESS: ${VAULT_LISTENING_ADDR}
+      VAULT_INTERNAL_ADDR: ${VAULT_INTERNAL_ADDR}
+    command: vault server -dev
+    entrypoint: ["/vault/scripts/vault.sh"]
+    ports:
+      - "8200:8200"
+    cap_add:
+      - IPC_LOCK
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "vault", "kv", "get",
+              "-address=http://127.0.0.1:8200",
+              "secret/calcDbSecrets" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - calc-db
+
+  calc-application-db:
+    container_name: calc-application-db
+    image: ${ECR_REGISTRY_REPO}:${IMAGE_NAME_DB}
+    environment:
+      SPRING_CLOUD_VAULT_TOKEN: ${VAULT_TOKEN}
+      SPRING_CLOUD_VAULT_URI: ${VAULT_APPLICATION_ADDR}
+    networks:
+      - calc-db
+    depends_on:
+      mysql-calc:
+        condition: service_healthy
+      vault-calc:
+        condition: service_started
+    ports:
+      - "8081:8081"
+    restart: on-failure
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://mysql-calc:8081/actuator/health"]
+      timeout: 10s
+      retries: 5
+
+volumes:
+  db_data:
+  vault_data:
+
+networks:
+  calc-db:
+    name: calc-db-network
+    driver: bridge

@@ -1,0 +1,17 @@
+.env
+.env.local
+.env.*.local
+
+.vscode/
+
+.docker/
+
+*.log
+logs/
+
+.DS_Store
+Thumbs.db
+
+vault/data/
+vault/*.hcl
+!vault/*.hcl.example

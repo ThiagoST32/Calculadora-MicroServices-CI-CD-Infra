@@ -1,0 +1,50 @@
+pipeline {
+    agent any
+
+    environment {
+        AWS_REGION         = credentials('AWS-REGION-DEFAULT')
+        ECR_REGISTRY       = credentials('ECR-REGISTRY-REPO-CALCULADORA')
+        IMAGE_NAME_DB      = credentials('IMAGE-NAME-DB')
+    }
+
+    triggers {
+        githubPush()
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'main',
+                    url: 'https://github.com/ThiagoST32/Calculadora-MicroServices-CI-CD-DB'
+            }
+        }
+        
+        stage('Docker Build MySQL') {
+            steps {
+            	script { 
+            	  def imageTag = "${ECR_REGISTRY}/${IMAGE_NAME_DB}:1.0"
+            	  sh "docker build -f Servers/MySQL/Dockerfile -t ${imageTag} ."
+            	  env.IMAGE_TAG_DB = imageTag
+            	}
+            }
+        }
+
+	stage('Push ECR MySQL Application') {
+            steps {
+                withCredentials([[
+                    $class:            'AmazonWebServicesCredentialsBinding',
+                    credentialsId:     'YOUR-CREDENTIALS-JENKINS-AWS',
+                    accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                    secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                ]]) {
+                    sh """
+                        aws ecr get-login-password --region ${AWS_REGION} \
+                          | docker login --username AWS --password-stdin ${ECR_REGISTRY}
+
+                        docker push ${env.IMAGE_TAG_DB}
+                    """
+                }
+            }
+        }
+    }
+}
