@@ -6,6 +6,9 @@ services:
     ports:
       - "8083:8083"
 
+    environment:
+      FEIGN_CLIENT_CALCREPO_URL: http://calc-application-db:8081/api/v1/calcRepo
+
     healthcheck:
       test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8083/actuator/health"]
       timeout: 10s
@@ -16,9 +19,13 @@ services:
     restart: on-failure
     networks:
       - calc-app-main
+      - calc-db
 
 
 networks:
   calc-app-main:
     name: calc-app-main-network
     driver: bridge
+  calc-db:
+    name: calc-db-network
+    external: true

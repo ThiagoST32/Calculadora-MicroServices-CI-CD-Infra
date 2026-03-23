@@ -1,81 +1,65 @@
 pipeline {
-
     agent any
 
     environment {
-        BASE_URL_APP   = credentialsId('BASE-URL-APP')
-        BASE_URL_DB    = credentialsId('BASE-URL-DB')
+        BASE_URL_APP   = "http://localhost:8083"
+        BASE_URL_DB    = "http://localhost:8081"
         MAX_RETRIES    = "10"
         RETRY_INTERVAL = "5"
     }
 
     stages {
-        stage('Verificando se API principal está online!') {
+        stage('Verificando se API principal esta online') {
             steps {
                 script {
                     echo "Aguardando API principal em ${BASE_URL_APP}..."
-
-                    retry(MAX_RETRIES.toInterger()) {
+                    retry(MAX_RETRIES.toInteger()) {
                         sleep(RETRY_INTERVAL.toInteger())
-
-                        def statusApp = sh (
-                            script:  "curl -f -s -o /dev/null -w '%{http_code}' ${BASE_URL_APP}/actuator/health",
+                        def statusApp = sh(
+                            script: "curl -f -s -o /dev/null -w '%{http_code}' ${BASE_URL_APP}/actuator/health",
                             returnStdout: true
                         ).trim()
-
                         if (statusApp != '200') {
-                            echo "API principal ainda não está pronta. Status: ${statusApp}"
+                            error("API principal ainda nao esta pronta. Status: ${statusApp}")
                         }
-
-                        echo "API principal está pronta!"
+                        echo "API principal esta pronta!"
                     }
                 }
             }
         }
 
-        stage('Verificando se API de persistência está online!') {
+        stage('Verificando se API de persistencia esta online') {
             steps {
                 script {
-                    echo "Aguardando API de persistência em ${BASE_URL_DB}..."
-
-                    retry(MAX_RETRIES.toInterger()) {
+                    echo "Aguardando API de persistencia em ${BASE_URL_DB}..."
+                    retry(MAX_RETRIES.toInteger()) {
                         sleep(RETRY_INTERVAL.toInteger())
-
-                        def statusDB = sh (
-                            script:  "curl -f -s -o /dev/null -w '%{http_code}' ${BASE_URL_DB}/actuator/health",
+                        def statusDB = sh(
+                            script: "curl -f -s -o /dev/null -w '%{http_code}' ${BASE_URL_DB}/actuator/health",
                             returnStdout: true
                         ).trim()
-
                         if (statusDB != '200') {
-                            echo "API de persistência ainda não está pronta. Status: ${statusDB}"
+                            error("API de persistencia ainda nao esta pronta. Status: ${statusDB}")
                         }
-
-                        echo "API de persistência está pronta!"
+                        echo "API de persistencia esta pronta!"
                     }
                 }
             }
         }
 
-        stage('Verificando Health-Check - Acuator') {
+        stage('Verificando Health-Check - Actuator') {
             steps {
                 script {
-                    echo "Verificando Health da aplicação principal..."
-
                     sh """
-                        HEALTH=\${curl} -s ${BASE_URL_APP}/actuator/health
+                        HEALTH=\$(curl -s ${BASE_URL_APP}/actuator/health)
                         echo "Resposta: \$HEALTH"
-                        echo "\$HEALTH | grep -q '"status":"UP"' || { echo 'API principal não está UP'; exit 1; }
-                        echo "API principal está UP"
-                    """
+                        echo "\$HEALTH" | grep -q '"status":"UP"' || { echo 'API principal nao esta UP'; exit 1; }
+                        echo "API principal esta UP"
 
-                    echo "Verificando Health da aplicação de persistência..."
-
-
-                    sh """
-                        HEALTH=\${curl} -s ${BASE_URL_DB}/actuator/health
+                        HEALTH=\$(curl -s ${BASE_URL_DB}/actuator/health)
                         echo "Resposta: \$HEALTH"
-                        echo "\$HEALTH | grep -q '"status":"UP"' || { echo 'API de persistência não está UP'; exit 1; }
-                        echo "API de persistência está UP"
+                        echo "\$HEALTH" | grep -q '"status":"UP"' || { echo 'API de persistencia nao esta UP'; exit 1; }
+                        echo "API de persistencia esta UP"
                     """
                 }
             }
@@ -91,7 +75,7 @@ pipeline {
                             METODO="\$3"
                             URL="\$4"
                             CORPO="\$5"
- 
+
                             if [ -n "\$CORPO" ]; then
                                 STATUS=\$(curl -s -o /dev/null -w '%{http_code}' \
                                     -X \$METODO \
@@ -102,180 +86,177 @@ pipeline {
                                 STATUS=\$(curl -s -o /dev/null -w '%{http_code}' \
                                     -X \$METODO "\$URL")
                             fi
- 
+
                             if [ "\$STATUS" = "\$ESPERADO" ]; then
-                                echo " PASSOU  | \$DESCRICAO | HTTP \$STATUS"
+                                echo "PASSOU  | \$DESCRICAO | HTTP \$STATUS"
                             else
-                                echo " FALHOU  | \$DESCRICAO | Esperado: \$ESPERADO | Recebido: \$STATUS"
+                                echo "FALHOU  | \$DESCRICAO | Esperado: \$ESPERADO | Recebido: \$STATUS"
                                 exit 1
                             fi
                         }
 
-                        echo "──────────────────────────────────────────────"
-                        echo " SMOKE TESTS"
-                        echo "──────────────────────────────────────────────"
+                        echo "────────────────────────────────────────────"
+                        echo "SMOKE TESTS"
+                        echo "────────────────────────────────────────────"
 
-                        smokeTest "GET /api/v1/calc - Listar operações passadas" \
-                        "200" "GET" "${BASE_URL_APP}/api/v1/calc"
+                        smokeTest "GET /api/v1/calc - Listar operacoes" \
+                            "200" "GET" "${BASE_URL_APP}/api/v1/calc"
 
-                        smokeTest "GET /api/v1/calc/prev - Listar operações passadas" \
-                        "200" "GET" "${BASE_URL_APP}/api/v1/calc/prev"
+                        smokeTest "GET /api/v1/calc/prev - Listar operacoes passadas" \
+                            "200" "GET" "${BASE_URL_APP}/api/v1/calc/prev"
 
-                        smokeTest "POST /api/v1/calc/ - Divisão" \
-                        "200" "POST" "${BASE_URP_APP} /api/v1/calc" '{ "valor1": "100", "valor2": "20", "tipoDeOperacao": "DIVISAO" }'
+                        smokeTest "POST /api/v1/calc - Divisao" \
+                            "200" "POST" "${BASE_URL_APP}/api/v1/calc" \
+                            '{"valor1":"100","valor2":"20","tipoDeOperacao":"DIVISAO"}'
 
-                        smokeTest "POST /api/v1/calc/ - Multiplicação" \
-                        "200" "POST" "${BASE_URP_APP} /api/v1/calc" '{ "valor1": "100", "valor2": "20", "tipoDeOperacao": "MUTIPLICACAO" }'
+                        smokeTest "POST /api/v1/calc - Multiplicacao" \
+                            "200" "POST" "${BASE_URL_APP}/api/v1/calc" \
+                            '{"valor1":"100","valor2":"20","tipoDeOperacao":"MUTIPLICACAO"}'
 
-                        smokeTest "POST /api/v1/calc/ - Soma" \
-                        "200" "POST" "${BASE_URP_APP} /api/v1/calc" '{ "valor1": "100", "valor2": "20", "tipoDeOperacao": "SOMA" }'
+                        smokeTest "POST /api/v1/calc - Soma" \
+                            "200" "POST" "${BASE_URL_APP}/api/v1/calc" \
+                            '{"valor1":"100","valor2":"20","tipoDeOperacao":"SOMA"}'
 
-                        smokeTest "POST /api/v1/calc/ - Substração" \
-                        "200" "POST" "${BASE_URP_APP} /api/v1/calc" '{ "valor1": "100", "valor2": "20", "tipoDeOperacao": "SUBTRACAO" }'
+                        smokeTest "POST /api/v1/calc - Subtracao" \
+                            "200" "POST" "${BASE_URL_APP}/api/v1/calc" \
+                            '{"valor1":"100","valor2":"20","tipoDeOperacao":"SUBTRACAO"}'
 
-                        smokeTest "POST /api/v1/calc/ - Input inválido retornar erro" \
-                        "500" "POST" "${BASE_URP_APP} /api/v1/calc" '{ "valor1": "abc123", "valor2": "20", "tipoDeOperacao": "SUBTRACAO" }'
+                        smokeTest "POST /api/v1/calc - Input invalido retornar erro" \
+                            "500" "POST" "${BASE_URL_APP}/api/v1/calc" \
+                            '{"valor1":"abc123","valor2":"20","tipoDeOperacao":"SUBTRACAO"}'
 
-                        smokeTest "GET /api/v1/calcRepo - Listar operações diretamente do banco" \
-                        "200" "POST" "${BASE_URP_DB} /api/v1/calcRepo"
+                        smokeTest "GET /api/v1/calcRepo - Listar do banco" \
+                            "200" "GET" "${BASE_URL_DB}/api/v1/calcRepo"
 
-                        smokeTest "GET /api/v1/calcRepo/prev - Listar operações passadas diretamente do banco" \
-                        "200" "POST" "${BASE_URP_DB} /api/v1/calcRepo/prev"
+                        smokeTest "GET /api/v1/calcRepo/prev - Listar passadas do banco" \
+                            "200" "GET" "${BASE_URL_DB}/api/v1/calcRepo/prev"
 
-
-                        echo "──────────────────────────────────────────────"
+                        echo "────────────────────────────────────────────"
                         echo "Todos os Smoke Tests passaram!"
-                        echo "──────────────────────────────────────────────"
-
+                        echo "────────────────────────────────────────────"
                     """
                 }
             }
         }
 
-        stage('Teste de Integração - Validação de resultados') {
+        stage('Teste de Integracao - Validacao de resultados') {
             steps {
                 script {
-                    sh sh """
+                    sh """
                         assertResult() {
                             DESCRICAO="\$1"
                             CORPO="\$2"
                             RESULTADO_ESPERADO="\$3"
- 
-                            # Faz a requisição e captura o corpo completo da resposta
+
                             RESPOSTA=\$(curl -s -X POST \
                                 -H 'Content-Type: application/json' \
                                 -d "\$CORPO" \
                                 "${BASE_URL_APP}/api/v1/calc")
- 
+
                             echo "Resposta recebida: \$RESPOSTA"
- 
-                            # Verifica se o resultado esperado está contido na resposta
-                            # O DTO retorna: {"result":"<valor>"}
+
                             echo "\$RESPOSTA" | grep -q "\$RESULTADO_ESPERADO" \
-                                && echo " PASSOU  | \$DESCRICAO | Resultado: \$RESULTADO_ESPERADO" \
-                                || { echo " FALHOU  | \$DESCRICAO | Esperado conter: \$RESULTADO_ESPERADO"; exit 1; }
+                                && echo "PASSOU  | \$DESCRICAO | Resultado: \$RESULTADO_ESPERADO" \
+                                || { echo "FALHOU  | \$DESCRICAO | Esperado conter: \$RESULTADO_ESPERADO"; exit 1; }
                         }
- 
-                        echo "──────────────────────────────────────────────"
-                        echo " TESTES DE INTEGRAÇÃO"
-                        echo "──────────────────────────────────────────────"
- 
+
+                        echo "────────────────────────────────────────────"
+                        echo "TESTES DE INTEGRACAO"
+                        echo "────────────────────────────────────────────"
+
                         assertResult "SOMA 10 + 5 = 15.00" \
                             '{"valor1":"10","valor2":"5","tipoDeOperacao":"SOMA"}' "15.00"
- 
+
                         assertResult "SUBTRACAO 20 - 8 = 12.00" \
                             '{"valor1":"20","valor2":"8","tipoDeOperacao":"SUBTRACAO"}' "12.00"
- 
+
                         assertResult "MUTIPLICACAO 4 * 3 = 12.00" \
                             '{"valor1":"4","valor2":"3","tipoDeOperacao":"MUTIPLICACAO"}' "12.00"
- 
+
                         assertResult "DIVISAO 10 / 2 = 5.00" \
                             '{"valor1":"10","valor2":"2","tipoDeOperacao":"DIVISAO"}' "5.00"
- 
+
                         assertResult "SOMA decimal 1.5 + 2.5 = 4.00" \
-                            '{"valor1":"1.5","valor2":"2.5","tipoDeOperacao":"SOMA" "4.00"
- 
+                            '{"valor1":"1.5","valor2":"2.5","tipoDeOperacao":"SOMA"}' "4.00"
+
                         assertResult "DIVISAO com arredondamento 10 / 3 = 3.33" \
-                            '{"valor1":"10","valor2":"3","tipoDeOperacao":"DIVISAO" "3.33"
- 
-                        echo "──────────────────────────────────────────────"
-                        echo " Todos os Testes de Integração passaram!"
-                        echo "──────────────────────────────────────────────"
+                            '{"valor1":"10","valor2":"3","tipoDeOperacao":"DIVISAO"}' "3.33"
+
+                        echo "────────────────────────────────────────────"
+                        echo "Todos os Testes de Integracao passaram!"
+                        echo "────────────────────────────────────────────"
                     """
                 }
             }
         }
 
-        stage('Teste de Persistência - Feign Client') {
+        stage('Teste de Persistencia - Feign Client') {
             steps {
                 script {
                     sh """
-                        echo "──────────────────────────────────────────────"
-                        echo " TESTE DE PERSISTÊNCIA"
-                        echo "──────────────────────────────────────────────"
- 
-                        echo "Enviando operação para persistir..."
+                        echo "────────────────────────────────────────────"
+                        echo "TESTE DE PERSISTENCIA"
+                        echo "────────────────────────────────────────────"
+
                         curl -s -X POST \
                             -H 'Content-Type: application/json' \
                             -d '{"valor1":"99","valor2":"1","tipoDeOperacao":"SOMA"}' \
-                            "${BASE_URL_DB}/api/v1/calc"
- 
+                            "${BASE_URL_APP}/api/v1/calc"
+
                         sleep 2
- 
-                        echo "Verificando operação salva no banco..."
+
                         PREV=\$(curl -s "${BASE_URL_DB}/api/v1/calc/prev")
-                        echo "Última operação: \$PREV"
- 
+                        echo "Ultima operacao: \$PREV"
+
                         echo "\$PREV" | grep -q "100.00" \
-                            && echo "Persistência validada! Resultado 100.00 encontrado." \
-                            || { echo "Resultado esperado 100.00 não encontrado na persistência!"; exit 1; }
- 
-                        echo "──────────────────────────────────────────────"
-                        echo "Teste de Persistência passou!"
-                        echo "──────────────────────────────────────────────"
+                            && echo "Persistencia validada! Resultado 100.00 encontrado." \
+                            || { echo "Resultado esperado 100.00 nao encontrado!"; exit 1; }
+
+                        echo "────────────────────────────────────────────"
+                        echo "Teste de Persistencia passou!"
+                        echo "────────────────────────────────────────────"
                     """
                 }
             }
         }
 
-        stage('Teste de Carga - Estabilidade básica') {
+        stage('Teste de Carga - Estabilidade basica') {
             steps {
                 script {
                     sh """
-                        echo "──────────────────────────────────────────────"
-                        echo " TESTE DE CARGA LEVE (20 requisições)"
-                        echo "──────────────────────────────────────────────"
- 
+                        echo "────────────────────────────────────────────"
+                        echo "TESTE DE CARGA LEVE (20 requisicoes)"
+                        echo "────────────────────────────────────────────"
+
                         FALHAS=0
                         TOTAL=20
- 
                         i=1
+
                         while [ \$i -le \$TOTAL ]; do
                             STATUS=\$(curl -s -o /dev/null -w '%{http_code}' \
                                 -X POST \
                                 -H 'Content-Type: application/json' \
                                 -d '{"valor1":"2","valor2":"2","tipoDeOperacao":"SOMA"}' \
-                                "${BASE_URL}/api/v1/calc")
- 
+                                "${BASE_URL_APP}/api/v1/calc")
+
                             if [ "\$STATUS" != "200" ]; then
-                                echo "Requisição \$i falhou com status \$STATUS"
+                                echo "Requisicao \$i falhou com status \$STATUS"
                                 FALHAS=\$((FALHAS + 1))
                             fi
                             i=\$((i + 1))
                         done
- 
-                        echo ""
-                        echo "Resultado: \$((TOTAL - FALHAS))/\$TOTAL requisições bem-sucedidas"
+
+                        echo "Resultado: \$((TOTAL - FALHAS))/\$TOTAL requisicoes bem-sucedidas"
 
                         LIMITE=2
                         if [ \$FALHAS -gt \$LIMITE ]; then
                             echo "Muitas falhas: \$FALHAS (limite: \$LIMITE)"
                             exit 1
                         fi
- 
-                        echo "──────────────────────────────────────────────"
+
+                        echo "────────────────────────────────────────────"
                         echo "Teste de carga passou! Falhas: \$FALHAS/\$TOTAL"
-                        echo "──────────────────────────────────────────────"
+                        echo "────────────────────────────────────────────"
                     """
                 }
             }
@@ -285,21 +266,16 @@ pipeline {
     post {
         always {
             echo "Pipeline de testes finalizado."
-            echo "API Principal : ${BASE_URL_APP}"
-            echo "API Persistência: ${BASE_URL_DB}"
+            echo "API Principal: ${BASE_URL_APP}"
+            echo "API Persistencia: ${BASE_URL_DB}"
         }
- 
+
         success {
-            echo """
-            ╔══════════════════════════════════════╗
-            ║  TODOS OS TESTES PASSARAM            ║
-            ║  A aplicação está saudável!          ║
-            ╚══════════════════════════════════════╝
-            """
+            echo "TODOS OS TESTES PASSARAM - A aplicacao esta saudavel!"
         }
- 
+
         failure {
-            echo "Testes falharam — derrubando ambiente para evitar estado inconsistente."
+            echo "Testes falharam - derrubando ambiente."
             sh """
                 docker-compose -f compose/Servers/Application/docker-compose.yml down -v || true
                 echo "Containers derrubados."
