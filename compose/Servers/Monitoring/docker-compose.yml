@@ -118,3 +118,5 @@ volumes:
 networks:
   calc-db-network:
     external: true
+  calc-app-main-network:
+    external: true

@@ -2,9 +2,9 @@ pipeline {
     agent any
 
     environment {
-        AWS_REGION         = credentials('AWS-REGION-DEFAULT')
-        ECR_REGISTRY       = credentials('ECR-REGISTRY-REPO-CALCULADORA')
-        IMAGE_NAME_APP     = credentials('IMAGE-NAME-APP')
+        AWS_REGION            = credentials('AWS-REGION-DEFAULT')
+        ECR_REGISTRY          = credentials('ECR-REGISTRY-REPO-CALCULADORA-DB')
+        IMAGE_NAME_APP_DB     = credentials('IMAGE-NAME-APP-DB')
     }
 
     triggers {
@@ -28,7 +28,7 @@ pipeline {
         stage('Docker Build Java Application') {
             steps {
                 script {
-                	def imageTag = "${ECR_REGISTRY}/${IMAGE_NAME_APP}:1.0"
+                	def imageTag = "${ECR_REGISTRY}/${IMAGE_NAME_APP_DB}:1.0"
                 	sh "docker build -f Servers/JavaApp/Dockerfile -t ${imageTag} ."
                 	env.IMAGE_TAG = imageTag
                 }

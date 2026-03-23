@@ -1,0 +1,33 @@
+pipeline {
+    agent any
+
+    triggers{
+        githubPush()
+    }
+
+    stages{
+        stage('Cloning Repository') {
+            steps {
+                git branch: 'main',
+                    url: 'https://github.com/ThiagoST32/Calculadora-MicroServices-CI-CD-Infra'
+            }
+        }
+
+        stage('Deploy application') {
+            steps {
+                sh """
+                    docker-compose -f compose/Servers/ApplicationMain/docker-compose.yml up -d
+                """
+            }
+        }
+    }
+
+    post {
+        always {
+            echo 'Pipeline executada'
+        }
+        failure {
+            sh 'docker-compose -f compose/Servers/ApplicationMain/docker-compose.yml down -v || false'
+        }
+    }
+}

@@ -2,9 +2,9 @@ pipeline {
     agent any
 
     environment {
-        AWS_REGION         = credentials('AWS-REGION-DEFAULT')
-        ECR_REGISTRY       = credentials('ECR-REGISTRY-REPO-CALCULADORA')
-        IMAGE_NAME_DB      = credentials('IMAGE-NAME-DB')
+        AWS_REGION            = credentials('AWS-REGION-DEFAULT')
+        ECR_REGISTRY          = credentials('ECR-REGISTRY-REPO-CALCULADORA-DB')
+        IMAGE_NAME_APP_DB     = credentials('IMAGE-NAME-APP-DB')
     }
 
     triggers {
@@ -19,17 +19,23 @@ pipeline {
             }
         }
         
-        stage('Docker Build MySQL') {
+        stage('Maven Package') {
             steps {
-            	script { 
-            	  def imageTag = "${ECR_REGISTRY}/${IMAGE_NAME_DB}:1.0"
-            	  sh "docker build -f Servers/MySQL/Dockerfile -t ${imageTag} ."
-            	  env.IMAGE_TAG_DB = imageTag
+            	sh 'mvn clean package -DskipTests'
             	}
-            }
         }
 
-	stage('Push ECR MySQL Application') {
+        stage('Docker Build Java Application') {
+            steps {
+                script {
+                	def imageTag = "${ECR_REGISTRY}/${IMAGE_NAME_APP_DB}:1.0"
+                	sh "docker build -f Servers/JavaApp/Dockerfile -t ${imageTag} ."
+                	env.IMAGE_TAG = imageTag
+                }
+            }
+        }
+    
+        stage('Push para ECR') {
             steps {
                 withCredentials([[
                     $class:            'AmazonWebServicesCredentialsBinding',
@@ -41,7 +47,7 @@ pipeline {
                         aws ecr get-login-password --region ${AWS_REGION} \
                           | docker login --username AWS --password-stdin ${ECR_REGISTRY}
 
-                        docker push ${env.IMAGE_TAG_DB}
+                        docker push ${env.IMAGE_TAG}
                     """
                 }
             }

@@ -1,0 +1,56 @@
+pipeline {
+    agent any
+
+    environment {
+        AWS_REGION            = credentials('AWS-REGION-DEFAULT')
+        ECR_REGISTRY          = credentials('ECR-REGISTRY-REPO-CALCULADORA-APP-MAIN')
+        IMAGE_NAME            = credentials('IMAGE-NAME-APP')
+    }
+
+    triggers {
+        githubPush()
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'main',
+                    url: 'https://github.com/ThiagoST32/Calculadora-Micro-Services-CI-CD'
+            }
+        }
+        
+        stage('Maven Package') {
+            steps {
+            	sh 'mvn clean package -DskipTests'
+            	}
+        }
+
+        stage('Docker Build Java Application') {
+            steps {
+                script {
+                	def imageTag = "${ECR_REGISTRY}/${IMAGE_NAME}:1.0"
+                	sh "docker build -f Servers/Dockerfile -t ${imageTag} ."
+                	env.IMAGE_TAG = imageTag
+                }
+            }
+        }
+    
+        stage('Push para ECR') {
+            steps {
+                withCredentials([[
+                    $class:            'AmazonWebServicesCredentialsBinding',
+                    credentialsId:     'JenkinsECR',
+                    accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                    secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                ]]) {
+                    sh """
+                        aws ecr get-login-password --region ${AWS_REGION} \
+                          | docker login --username AWS --password-stdin ${ECR_REGISTRY}
+
+                        docker push ${env.IMAGE_TAG}
+                    """
+                }
+            }
+        }
+    }
+}
