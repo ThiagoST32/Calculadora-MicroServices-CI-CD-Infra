@@ -16,15 +16,15 @@ pipeline {
         stage('Creating .env') {
             steps {
                 withCredentials([
-                    string(credentialsId: 'ECR-REGISTRY-REPO-CALCULADORA',      variable: 'ECR_REGISTRY_REPO'),
-                    string(credentialsId: 'MYSQL-PASSWORD-ROOT',                variable: 'MYSQL_PASSWORD_ROOT'),
-                    string(credentialsId: 'VAULT-TOKEN',                        variable: 'VAULT_TOKEN'),
-                    string(credentialsId: 'VAULT-LISTENING-ADDR',               variable: 'VAULT_LISTENING_ADDR'),
-                    string(credentialsId: 'VAULT-INTERNAL-ADDR',                variable: 'VAULT_INTERNAL_ADDR'),
-                    string(credentialsId: 'VAULT-APPLICATION-ADDR',             variable: 'VAULT_APPLICATION_ADDR'),
-                    string(credentialsId: 'MYSQL-ROOT-HOST',                    variable: 'MYSQL_ROOT_HOST'),
-                    string(credentialsId: 'IMAGE-NAME-DB',                      variable: 'IMAGE_NAME_DB'),
-                    string(credentialsId: 'IMAGE-NAME-APP',                     variable: 'IMAGE_NAME_APP')
+                    string(credentialsId: 'ECR-REGISTRY-REPO-CALCULADORA-DB',           variable: 'ECR_REGISTRY_REPO'),
+                    string(credentialsId: 'MYSQL-PASSWORD-ROOT',                        variable: 'MYSQL_PASSWORD_ROOT'),
+                    string(credentialsId: 'VAULT-TOKEN',                                variable: 'VAULT_TOKEN'),
+                    string(credentialsId: 'VAULT-LISTENING-ADDR',                       variable: 'VAULT_LISTENING_ADDR'),
+                    string(credentialsId: 'VAULT-INTERNAL-ADDR',                        variable: 'VAULT_INTERNAL_ADDR'),
+                    string(credentialsId: 'VAULT-APPLICATION-ADDR',                     variable: 'VAULT_APPLICATION_ADDR'),
+                    string(credentialsId: 'MYSQL-ROOT-HOST',                            variable: 'MYSQL_ROOT_HOST'),
+                    string(credentialsId: 'IMAGE-NAME-DB',                              variable: 'IMAGE_NAME_DB'),
+                    string(credentialsId: 'IMAGE-NAME-APP-DB',                          variable: 'IMAGE_NAME_APP')
                 ]) {
                     sh """
                         # Gera o .env em tempo de execução — nunca commitado para que a aplicação possa subir corretamente
