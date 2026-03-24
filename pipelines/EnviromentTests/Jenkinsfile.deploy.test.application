@@ -107,29 +107,29 @@ pipeline {
 
                         smokeTest "POST /api/v1/calc - Divisao" \
                             "200" "POST" "${BASE_URL_APP}/api/v1/calc" \
-                            '{"valor1":"100","valor2":"20","tipoDeOperacao":"DIVISAO"}'
+                            '{"valueOne":"100","valueTwo":"20","tipoDeOperacao":"DIVISAO"}'
 
                         smokeTest "POST /api/v1/calc - Multiplicacao" \
                             "200" "POST" "${BASE_URL_APP}/api/v1/calc" \
-                            '{"valor1":"100","valor2":"20","tipoDeOperacao":"MUTIPLICACAO"}'
+                            '{"valueOne":"100","valueTwo":"20","tipoDeOperacao":"MULTIPLICACAO"}'
 
                         smokeTest "POST /api/v1/calc - Soma" \
                             "200" "POST" "${BASE_URL_APP}/api/v1/calc" \
-                            '{"valor1":"100","valor2":"20","tipoDeOperacao":"SOMA"}'
+                            '{"valueOne":"100","valueTwo":"20","tipoDeOperacao":"SOMA"}'
 
                         smokeTest "POST /api/v1/calc - Subtracao" \
                             "200" "POST" "${BASE_URL_APP}/api/v1/calc" \
-                            '{"valor1":"100","valor2":"20","tipoDeOperacao":"SUBTRACAO"}'
+                            '{"valueOne":"100","valueTwo":"20","tipoDeOperacao":"SUBTRACAO"}'
 
                         smokeTest "POST /api/v1/calc - Input invalido retornar erro" \
                             "500" "POST" "${BASE_URL_APP}/api/v1/calc" \
-                            '{"valor1":"abc123","valor2":"20","tipoDeOperacao":"SUBTRACAO"}'
+                            '{"valueOne":"abc123","valueTwo":"20","tipoDeOperacao":"SUBTRACAO"}'
 
                         smokeTest "GET /api/v1/calcRepo - Listar do banco" \
                             "200" "GET" "${BASE_URL_DB}/api/v1/calcRepo"
 
-                        smokeTest "GET /api/v1/calcRepo/prev - Listar passadas do banco" \
-                            "200" "GET" "${BASE_URL_DB}/api/v1/calcRepo/prev"
+                        smokeTest "GET /api/v1/calcRepo/getPreviousOperation - Listar passadas do banco" \
+                            "200" "GET" "${BASE_URL_DB}/api/v1/calcRepo/getPreviousOperation"
 
                         echo "────────────────────────────────────────────"
                         echo "Todos os Smoke Tests passaram!"
@@ -165,22 +165,22 @@ pipeline {
                         echo "────────────────────────────────────────────"
 
                         assertResult "SOMA 10 + 5 = 15.00" \
-                            '{"valor1":"10","valor2":"5","tipoDeOperacao":"SOMA"}' "15.00"
+                            '{"valueOne":"10","valueTwo":"5","tipoDeOperacao":"SOMA"}' "15.00"
 
                         assertResult "SUBTRACAO 20 - 8 = 12.00" \
-                            '{"valor1":"20","valor2":"8","tipoDeOperacao":"SUBTRACAO"}' "12.00"
+                            '{"valueOne":"20","valueTwo":"8","tipoDeOperacao":"SUBTRACAO"}' "12.00"
 
-                        assertResult "MUTIPLICACAO 4 * 3 = 12.00" \
-                            '{"valor1":"4","valor2":"3","tipoDeOperacao":"MUTIPLICACAO"}' "12.00"
+                        assertResult "MULTIPLICACAO 4 * 3 = 12.00" \
+                            '{"valueOne":"4","valueTwo":"3","tipoDeOperacao":"MULTIPLICACAO"}' "12.00"
 
                         assertResult "DIVISAO 10 / 2 = 5.00" \
-                            '{"valor1":"10","valor2":"2","tipoDeOperacao":"DIVISAO"}' "5.00"
+                            '{"valueOne":"10","valueTwo":"2","tipoDeOperacao":"DIVISAO"}' "5.00"
 
                         assertResult "SOMA decimal 1.5 + 2.5 = 4.00" \
-                            '{"valor1":"1.5","valor2":"2.5","tipoDeOperacao":"SOMA"}' "4.00"
+                            '{"valueOne":"1.5","valueTwo":"2.5","tipoDeOperacao":"SOMA"}' "4.00"
 
                         assertResult "DIVISAO com arredondamento 10 / 3 = 3.33" \
-                            '{"valor1":"10","valor2":"3","tipoDeOperacao":"DIVISAO"}' "3.33"
+                            '{"valueOne":"10","valueTwo":"3","tipoDeOperacao":"DIVISAO"}' "3.33"
 
                         echo "────────────────────────────────────────────"
                         echo "Todos os Testes de Integracao passaram!"
@@ -200,12 +200,12 @@ pipeline {
 
                         curl -s -X POST \
                             -H 'Content-Type: application/json' \
-                            -d '{"valor1":"99","valor2":"1","tipoDeOperacao":"SOMA"}' \
+                            -d '{"valueOne":"99","valueTwo":"1","tipoDeOperacao":"SOMA"}' \
                             "${BASE_URL_APP}/api/v1/calc"
 
                         sleep 2
 
-                        PREV=\$(curl -s "${BASE_URL_DB}/api/v1/calc/prev")
+                        PREV=\$(curl -s "${BASE_URL_DB}/api/v1/calcRepo/getPreviousOperation")
                         echo "Ultima operacao: \$PREV"
 
                         echo "\$PREV" | grep -q "100.00" \
@@ -236,7 +236,7 @@ pipeline {
                             STATUS=\$(curl -s -o /dev/null -w '%{http_code}' \
                                 -X POST \
                                 -H 'Content-Type: application/json' \
-                                -d '{"valor1":"2","valor2":"2","tipoDeOperacao":"SOMA"}' \
+                                -d '{"valueOne":"2","valueTwo":"2","tipoDeOperacao":"SOMA"}' \
                                 "${BASE_URL_APP}/api/v1/calc")
 
                             if [ "\$STATUS" != "200" ]; then
