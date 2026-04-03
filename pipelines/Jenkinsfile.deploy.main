@@ -6,17 +6,17 @@ pipeline {
             parallel {
                 stage('Pipe 01 — App-DB') {
                     steps {
-                        build job: 'DB/Calculadora Micro Services ECR Java Application', wait: true
+                        build job: 'Infra-DB/Calculadora Micro Services ECR Java Application', wait: true
                     }
                 }
                 stage('Pipe 02 — Banco') {
                     steps {
-                        build job: 'DB/Calculadora Micro services MySQL ECR', wait: true
+                        build job: 'Infra-DB/Calculadora Micro services MySQL ECR', wait: true
                     }
                 }
                 stage('Pipe 03 - App-Main') {
                     steps {
-                        build job: 'APP/Calculador Micro Services ECR Application Main', wait: true
+                        build job: 'Infra-Calc/Calculador Micro Services ECR Application Main', wait: true
                     }
                 }
             }
@@ -26,7 +26,7 @@ pipeline {
             steps {
                 script {
                     def status = build(
-                        job: 'DB/Calculadora Micro Services Up Aplicação DB',
+                        job: 'Infra-DB/Calculadora Micro Services Up Aplicação DB',
                         wait: true,
                         propagate: false
                     )
@@ -43,7 +43,7 @@ pipeline {
         stage('Fase 3 - Subir aplicação principal') {
             steps {
                 script {
-                    build job: 'APP/Calculador Micro Services Up Aplicação Principal', wait: true
+                    build job: 'Infra-Calc/Calculadora Micro Services Up Aplicação Principal', wait: true
                 }
             }
         }
@@ -54,7 +54,7 @@ pipeline {
             }
             steps {
                 script {
-                    build job: 'Monitoring/Calculadora Micro Services Up Monitoramento', wait: true
+                    build job: 'Infra-Monitoring/Calculadora Micro Services Up Monitoramento', wait: true
                 }
             }
         }
@@ -62,7 +62,7 @@ pipeline {
         stage('Fase 5 - Testes no ambiente') {
             steps {
                 script {
-                    build job: 'Environment tests/Calculadora Micro Services Testes no Ambiente', wait: true
+                    build job: 'Infra-Environment-Tests/Calculadora Micro Services Testes no Ambiente', wait: true
                 }
             }
         }

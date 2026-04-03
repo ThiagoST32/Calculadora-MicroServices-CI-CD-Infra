@@ -18,18 +18,12 @@ pipeline {
                     url: 'https://github.com/ThiagoST32/Calculadora-MicroServices-CI-CD-DB'
             }
         }
-        
-        stage('Maven Package') {
-            steps {
-            	sh 'mvn clean package -DskipTests'
-            	}
-        }
 
         stage('Docker Build Java Application') {
             steps {
                 script {
                 	def imageTag = "${ECR_REGISTRY}/${IMAGE_NAME_APP_DB}:1.0"
-                	sh "docker build -f Servers/JavaApp/Dockerfile -t ${imageTag} ."
+                	sh "docker build -f Servers/MySQL/Dockerfile -t ${imageTag} ."
                 	env.IMAGE_TAG = imageTag
                 }
             }

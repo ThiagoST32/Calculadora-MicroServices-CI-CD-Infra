@@ -47,7 +47,7 @@ pipeline {
         stage('Deploy application') {
             steps {
                 sh """
-                    docker-compose -f compose/Servers/ApplicationDB/docker-compose.yml up -d
+                    docker compose -f compose/Servers/ApplicationDB/docker-compose.yml up -d
                 """
             }
         }
