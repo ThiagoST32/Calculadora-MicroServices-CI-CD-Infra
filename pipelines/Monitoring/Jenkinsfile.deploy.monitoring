@@ -51,7 +51,7 @@ pipeline {
         }
 
         failure {
-            sh 'docker-compose -f compose/Servers/Monitoring/docker-compose.yml down -v || false'
+            sh 'docker compose -f compose/Servers/Monitoring/docker-compose.yml down -v || false'
         }
     }
 }

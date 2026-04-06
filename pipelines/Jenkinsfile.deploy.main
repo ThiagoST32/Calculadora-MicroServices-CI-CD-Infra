@@ -66,12 +66,6 @@ pipeline {
                 }
             }
         }
-
-        stage('Tear down') {
-            steps {
-                echo 'Simulando limpeza!'
-            }
-        }
     }
 
     post {
@@ -80,8 +74,15 @@ pipeline {
             echo 'Pipeline executada!'
         }
 
+        success {
+            echo "✅ Pipeline concluída com sucesso!"
+        }
+
         failure {
             echo 'Pipeline falhou — executando tear down de segurança'
+            build job: 'Calculadora Micro Services » Tear Down', 
+                  parameters: [string(name: 'MOTIVO', value: "Falha automática na pipeline principal")],
+                  wait: true
         }
     }
 }

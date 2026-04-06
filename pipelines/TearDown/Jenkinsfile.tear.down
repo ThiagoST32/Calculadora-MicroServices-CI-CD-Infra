@@ -1,0 +1,122 @@
+pipeline {
+    agent any
+
+    triggers {
+        githubPush()
+    }
+
+    stages {
+
+        stage('Confirmação do Tear Down') {
+            steps {
+                script {
+                    def userInput = input(
+                        id: 'confirm-teardown',
+                        message: '⚠️ ATENÇÃO: Esta ação irá derrubar TODA a aplicação!',
+                        ok: 'Confirmar Tear Down',
+                        parameters: [
+                            choice(
+                                name: 'AMBIENTE',
+                                choices: ['CANCELAR', 'CONFIRMAR'],
+                                description: 'Selecione CONFIRMAR para prosseguir com o tear down'
+                            ),
+                            string(
+                                name: 'MOTIVO',
+                                defaultValue: '',
+                                description: 'Informe o motivo do tear down (obrigatório)'
+                            )
+                        ]
+                    )
+
+                    if (userInput['AMBIENTE'] == 'CANCELAR' || userInput['MOTIVO'].trim() == '') {
+                        success("Tear down cancelado pelo usuário ou motivo não informado.")
+                    }
+
+                    echo "📝 Motivo: ${userInput['MOTIVO']}"
+                }
+            }
+        }
+
+        stage('Cloning Repository') {
+            steps {
+                git branch: 'main',
+                    url: 'https://github.com/ThiagoST32/Calculadora-MicroServices-CI-CD-Infra'
+            }
+        }
+
+        stage('Tear Down — Monitoramento') {
+            steps {
+                sh '''
+                    echo "🔻 Derrubando stack de Monitoramento..."
+                    docker compose -f compose/Servers/Monitoring/docker-compose.yml down -v || true
+                    echo "✅ Monitoramento derrubado."
+                '''
+            }
+        }
+
+        stage('Tear Down — Aplicação Principal') {
+            steps {
+                sh '''
+                    echo "🔻 Derrubando stack da Aplicação Principal..."
+                    docker compose -f compose/Servers/ApplicationMain/docker-compose.yml down -v || true
+                    echo "✅ Aplicação Principal derrubada."
+                '''
+            }
+        }
+
+        stage('Tear Down — Aplicação DB') {
+            steps {
+                sh '''
+                    echo "🔻 Derrubando stack da Aplicação DB..."
+                    docker compose -f compose/Servers/ApplicationDB/docker-compose.yml down -v || true
+                    echo "✅ Aplicação DB derrubada."
+                '''
+            }
+        }
+
+        stage('Limpeza de Imagens Docker') {
+            steps {
+                script {
+                    def limpeza = input(
+                        id: 'confirm-prune',
+                        message: '🗑️ Deseja remover também as imagens Docker locais?',
+                        ok: 'Responder',
+                        parameters: [
+                            choice(
+                                name: 'LIMPAR_IMAGENS',
+                                choices: ['NÃO', 'SIM'],
+                                description: 'Remove imagens não utilizadas do host'
+                            )
+                        ]
+                    )
+
+                    if (limpeza == 'SIM') {
+                        sh '''
+                            echo "🗑️ Removendo imagens Docker não utilizadas..."
+                            docker image prune -af || true
+                            echo "✅ Imagens removidas."
+                        '''
+                    } else {
+                        echo "⏭️ Limpeza de imagens ignorada."
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            sh '''
+                rm -f compose/Servers/Monitoring/.env
+                rm -f compose/Servers/ApplicationMain/.env
+                rm -f compose/Servers/ApplicationDB/.env
+            '''
+        }
+        success {
+            echo "✅ Tear down concluído com sucesso. Todos os serviços foram derrubados."
+        }
+        failure {
+            echo "❌ Tear down falhou ou foi cancelado. Verifique os logs."
+        }
+    }
+}

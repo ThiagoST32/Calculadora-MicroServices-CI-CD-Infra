@@ -1,56 +1,88 @@
 pipeline {
     agent any
 
-    environment {
-        AWS_REGION            = credentials('AWS-REGION-DEFAULT')
-        ECR_REGISTRY          = credentials('ECR-REGISTRY-REPO-CALCULADORA-APP-MAIN')
-        IMAGE_NAME            = credentials('IMAGE-NAME-APP')
-    }
-
     triggers {
         githubPush()
     }
 
     stages {
+
         stage('Checkout') {
             steps {
                 git branch: 'main',
-                    url: 'https://github.com/ThiagoST32/Calculadora-Micro-Services-CI-CD'
+                    url: 'https://github.com/ThiagoST32/Calculadora-MicroServices-CI-CD-DB'
             }
         }
-        
+
         stage('Maven Package') {
             steps {
-            	sh 'mvn clean package -DskipTests'
-            	}
+                sh 'mvn clean package -DskipTests'
+            }
         }
 
-        stage('Docker Build Java Application') {
+        stage('Prepare Image Tag') {
+            steps {
+                withCredentials([
+                    string(credentialsId: 'ECR-REGISTRY-REPO-CALCULADORA-APP-MAIN', variable: 'ECR_REGISTRY'),
+                    string(credentialsId: 'IMAGE-NAME-APP', variable: 'IMAGE_NAME')
+                ]) {
+                    script {
+                        def registry  = ECR_REGISTRY.trim()
+                        def imageName = IMAGE_NAME.trim()
+                        def imageTag  = "${registry}/${imageName}:1.0"
+
+                        writeFile file: 'image_tag_main_app.txt', text: imageTag
+                    }
+                }
+            }
+        }
+
+        stage('Docker Build MySQL') {
             steps {
                 script {
-                	def imageTag = "${ECR_REGISTRY}/${IMAGE_NAME}:1.0"
-                	sh "docker build -f Servers/Dockerfile -t ${imageTag} ."
-                	env.IMAGE_TAG = imageTag
+                    def imageTag = readFile('image_tag_main_app.txt').trim()
+                    sh "docker build -f Servers/MySQL/Dockerfile -t ${imageTag} ."
+
+                    env.IMAGE_TAG = imageTag
                 }
             }
         }
-    
+
         stage('Push para ECR') {
             steps {
-                withCredentials([[
-                    $class:            'AmazonWebServicesCredentialsBinding',
-                    credentialsId:     'JenkinsECR',
-                    accessKeyVariable: 'AWS_ACCESS_KEY_ID',
-                    secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
-                ]]) {
-                    sh """
-                        aws ecr get-login-password --region ${AWS_REGION} \
-                          | docker login --username AWS --password-stdin ${ECR_REGISTRY}
+                withCredentials([
+                    string(credentialsId: 'AWS-REGION-DEFAULT', variable: 'AWS_REGION'),
+                    string(credentialsId: 'ECR-REGISTRY-REPO-CALCULADORA-APP-MAIN', variable: 'ECR_REGISTRY'),
+                    [
+                        $class:            'AmazonWebServicesCredentialsBinding',
+                        credentialsId:     'JenkinsECR',
+                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                    ]
+                ]) {
+                    script {
+                        def imageTag = readFile('image_tag_main_app.txt').trim()
+                        sh """
+                            aws ecr get-login-password --region \$AWS_REGION \
+                              | docker login --username AWS --password-stdin \$ECR_REGISTRY
 
-                        docker push ${env.IMAGE_TAG}
-                    """
+                            docker push ${imageTag}
+                        """
+                    }
                 }
             }
+        }
+    }
+
+    post {
+        always {
+            sh 'rm -f image_tag_main_app.txt'
+        }
+        success {
+            echo "Imagem publicada com sucesso no ECR!"
+        }
+        failure {
+            echo "Pipeline falhou — verifique os logs acima."
         }
     }
 }

@@ -29,15 +29,15 @@ pipeline {
                     sh """
                         # Gera o .env em tempo de execução — nunca commitado para que a aplicação possa subir corretamente
                         cat > compose/Servers/ApplicationDB/.env <<EOF
-                        ECR_REGISTRY_REPO=${ECR_REGISTRY_REPO}
-                        IMAGE_NAME_DB=${IMAGE_NAME_DB}
-                        IMAGE_NAME_APP=${IMAGE_NAME_APP}
-                        MYSQL_PASSWORD_ROOT=${MYSQL_PASSWORD_ROOT}
-                        MYSQL_ROOT_HOST=${MYSQL_ROOT_HOST}
-                        VAULT_TOKEN=${VAULT_TOKEN}
-                        VAULT_LISTENING_ADDR=${VAULT_LISTENING_ADDR}
-                        VAULT_INTERNAL_ADDR=${VAULT_INTERNAL_ADDR}
-                        VAULT_APPLICATION_ADDR=${VAULT_APPLICATION_ADDR}
+                        ECR_REGISTRY_REPO='${ECR_REGISTRY_REPO}'
+                        IMAGE_NAME_DB='${IMAGE_NAME_DB}'
+                        IMAGE_NAME_APP='${IMAGE_NAME_APP}'
+                        MYSQL_PASSWORD_ROOT='${MYSQL_PASSWORD_ROOT}'
+                        MYSQL_ROOT_HOST='${MYSQL_ROOT_HOST}'
+                        VAULT_TOKEN='${VAULT_TOKEN}'
+                        VAULT_LISTENING_ADDR='${VAULT_LISTENING_ADDR}'
+                        VAULT_INTERNAL_ADDR='${VAULT_INTERNAL_ADDR}'
+                        VAULT_APPLICATION_ADDR='${VAULT_APPLICATION_ADDR}'
                         EOF
                     """
                 }
@@ -58,7 +58,7 @@ pipeline {
             sh 'rm -f compose/Servers/ApplicationDB/.env'
         }
         failure {
-            sh 'docker-compose -f compose/Servers/ApplicationDB/docker-compose.yml down -v || false'
+            sh 'docker compose -f compose/Servers/ApplicationDB/docker-compose.yml down -v || false'
         }
     }
 }
