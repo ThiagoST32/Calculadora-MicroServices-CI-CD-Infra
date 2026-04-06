@@ -28,3 +28,9 @@ scrape_configs:
       - targets: ['cadvisor-service:8082']
         labels:
           alias: "cadvisor-service"
+
+  - job_name: 'calc-application-main'
+    metrics_path: '/acuator/prometheus'
+    scrape_interval: 5s
+    static_configs:
+      - targets: ['calc-app-main:8083']
