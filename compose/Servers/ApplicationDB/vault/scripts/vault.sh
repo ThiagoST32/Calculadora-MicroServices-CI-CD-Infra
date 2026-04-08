@@ -22,9 +22,12 @@ done
 echo "✅ Vault is ready, writing secrets..."
 
 vault kv put secret/calcDbSecrets \
-  spring.datasource.url=jdbc:mysql://mysql-calc:3306/calc \
-  spring.datasource.username=calcUserDB \
-  spring.datasource.password=123456
+  spring.datasource.jdbc-url=jdbc:mysql://mysql-calc:3306/calc \
+  spring.datasource.username=${MYSQL_USER_NAME} \
+  spring.datasource.password=${MYSQL_PASSWORD_USER} \
+  admin.datasource.jdbc-url=jdbc:mysql://mysql-calc:3306/information_schema \
+  admin.datasource.username=root \
+  admin.datasource.password=${MYSQL_PASSWORD_ROOT}
 
 echo "✅ Vault secrets configured successfully!"
 

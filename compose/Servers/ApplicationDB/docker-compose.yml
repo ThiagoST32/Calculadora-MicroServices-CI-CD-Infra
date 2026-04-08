@@ -1,14 +1,14 @@
 services:
   mysql-calc:
     container_name: mysql-calc
-    image: ${ECR_REGISTRY_REPO}/${IMAGE_NAME_DB}:1.0
+    image: teste-mysql
     volumes:
       - ./MySQL/init.sql:/docker-entrypoint-initdb.d/init.sql
       - db_data:/var/lib/mysql
     depends_on:
       - vault-calc
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD_ROOT}
+      MYSQL_ROOT_PASSWORD: 123
       MYSQL_ROOT_HOST: ${MYSQL_ROOT_HOST}
     ports:
       - "3306:3306"
@@ -32,6 +32,9 @@ services:
       VAULT_DEV_ROOT_TOKEN_ID: ${VAULT_TOKEN}
       VAULT_DEV_LISTEN_ADDRESS: ${VAULT_LISTENING_ADDR}
       VAULT_INTERNAL_ADDR: ${VAULT_INTERNAL_ADDR}
+      MYSQL_USER_NAME: ${MYSQL_USER_NAME}
+      MYSQL_PASSWORD_USER: ${MYSQL_USER_PASSWORD}
+      MYSQL_PASSWORD_ROOT: ${MYSQL_PASSWORD_ROOT}
     command: vault server -dev
     entrypoint: ["/vault/scripts/vault.sh"]
     ports:
@@ -50,7 +53,7 @@ services:
 
   calc-application-db:
     container_name: calc-application-db
-    image: ${ECR_REGISTRY_REPO}/${IMAGE_NAME_APP}:1.0
+    image: teste
     environment:
       SPRING_CLOUD_VAULT_TOKEN: ${VAULT_TOKEN}
       SPRING_CLOUD_VAULT_URI: ${VAULT_APPLICATION_ADDR}
