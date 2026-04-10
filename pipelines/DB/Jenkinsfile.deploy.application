@@ -17,6 +17,8 @@ pipeline {
             steps {
                 withCredentials([
                     string(credentialsId: 'ECR-REGISTRY-REPO-CALCULADORA-DB',           variable: 'ECR_REGISTRY_REPO'),
+                    string(credentialsId: 'MYSQL-USER-NAME',                            variable: 'MYSQL_USER_NAME'),
+                    string(credentialsId: 'MYSQL-PASSWORD-USER',                        variable: 'MYSQL_PASSWORD_USER'),
                     string(credentialsId: 'MYSQL-PASSWORD-ROOT',                        variable: 'MYSQL_PASSWORD_ROOT'),
                     string(credentialsId: 'VAULT-TOKEN',                                variable: 'VAULT_TOKEN'),
                     string(credentialsId: 'VAULT-LISTENING-ADDR',                       variable: 'VAULT_LISTENING_ADDR'),
@@ -38,6 +40,8 @@ pipeline {
                         VAULT_LISTENING_ADDR='${VAULT_LISTENING_ADDR}'
                         VAULT_INTERNAL_ADDR='${VAULT_INTERNAL_ADDR}'
                         VAULT_APPLICATION_ADDR='${VAULT_APPLICATION_ADDR}'
+                        MYSQL_USER_NAME='${MYSQL_USER_NAME}'
+                        MYSQL_USER_PASSWORD='${MYSQL_PASSWORD_USER}'
                         EOF
                     """
                 }
